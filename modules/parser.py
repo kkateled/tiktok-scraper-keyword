@@ -1,16 +1,16 @@
 import os
 import pickle
 from time import sleep
-
 from selenium.webdriver import Keys
 from selenium.webdriver.common.by import By
-
+from selenium.webdriver.common.action_chains import ActionChains
+from selenium_stealth import stealth
 from modules.base import TikTok
 
 
 class Parser(TikTok):
     URL = 'https://www.tiktok.com/'
-    LOGIN_URL = 'https://www.tiktok.com/login/phone-or-email/email'
+    # LOGIN_URL = 'https://www.tiktok.com/login/phone-or-email/email'
 
     def __init__(self, email, password, proxy=None, headless=False):
         super().__init__(proxy, headless)
@@ -18,8 +18,18 @@ class Parser(TikTok):
         self.password = password
         self.cookies_path = os.path.join(os.path.abspath('data'), 'cookies')
         self.cookies_file_path = os.path.join(self.cookies_path, f'{self.email}.pkl')
+        self.actions = ActionChains(self.driver, duration=550)
 
         os.makedirs(self.cookies_path, exist_ok=True)
+
+        stealth(self.driver,
+                languages=["en-US", "en"],
+                vendor="Google Inc.",
+                platform="Win32",
+                webgl_vendor="Intel Inc.",
+                renderer="Intel Iris OpenGL Engine",
+                fix_hairline=True,
+                )
 
     def __input_keyword(self, keyword):
         # Find the input element using Selenium and input data into it
@@ -88,52 +98,56 @@ class Parser(TikTok):
         return os.path.exists(cookies_filename)
 
     def login(self):
-        # Check if cookies file exists
-        if self.__cookies_file_exists(self.cookies_file_path):
-            print('Cookies found. Logging into the account with the cookies...')
-
-            # Load cookies from the existing file
-            with open(self.cookies_file_path, "rb") as cookies_file:
-                cookies = pickle.load(cookies_file)
-
-            # Navigate to the login URL and add cookies to the current session
-            self.driver.get(self.LOGIN_URL)
-            for cookie in cookies:
-                self.driver.add_cookie(cookie)
-
-            # Refresh the page after adding cookies
-            self.driver.get(self.LOGIN_URL)
-        else:
+        # # Check if cookies file exists
+        # if self.__cookies_file_exists(self.cookies_file_path):
+        #     print('Cookies found. Logging into the account with the cookies...')
+        #
+        #     # Load cookies from the existing file
+        #     with open(self.cookies_file_path, "rb") as cookies_file:
+        #         cookies = pickle.load(cookies_file)
+        #
+        #     # Navigate to the login URL and add cookies to the current session
+        #     self.driver.get(self.URL)
+        #     for cookie in cookies:
+        #         self.driver.add_cookie(cookie)
+        #     # Refresh the page after adding cookies
+        #     self.driver.get(self.URL)
+        # else:
             try:
                 print('Logging into the account...')
 
                 # Navigate to the login URL
-                self.driver.get(self.LOGIN_URL)
+                self.driver.get(self.URL)
 
+                # Find and click the login proposal
+                step1 = self._wait_for_element_located(By.XPATH, ".//*[@data-e2e='top-login-button']")
+                step1.click()
+                # Find and click the login proposal with phone/email/user_name
+                step2 = self._wait_for_element_located(By.XPATH,
+                                                       "//*[contains(text(), 'Use phone / email / username')]")
+                step2.click()
+                # Find and click the login proposal with email
+                step3 = self._wait_for_element_located(By.XPATH,
+                                                       "//*[contains(text(), 'Log in with email or username')]")
+                step3.click()
                 # Find and fill in the email input field
-                input_email = self._wait_for_element_located(By.CSS_SELECTOR, 'input[type="text"]')
+                input_email = self._wait_for_element_located(By.XPATH, "//input[@placeholder='Email or username']")
                 input_email.send_keys(self.email)
-
                 # Find and fill in the password input field
-                input_password = self._wait_for_element_located(By.CSS_SELECTOR, 'input[type="password"]')
+                input_password = self._wait_for_element_located(By.XPATH, "//input[@placeholder='Password']")
                 input_password.send_keys(self.password)
-
                 # Find and click the login button
                 login_button = self.driver.find_element(By.CSS_SELECTOR, 'button[data-e2e="login-button"]')
                 login_button.click()
+                sleep(100)
 
-                sleep(30)
-
-                # Wait for the login button to become invisible (indicating successful login)
-                self._wait_for_element_invisible(By.CSS_SELECTOR, 'button[data-e2e="login-button"]')
-
-                # Get the current session cookies and save them to a file
-                cookies = self.driver.get_cookies()
-                with open(self.cookies_file_path, "wb") as cookies_file:
-                    pickle.dump(cookies, cookies_file)
+                # # Get the current session cookies and save them to a file
+                # cookies = self.driver.get_cookies()
+                # with open(self.cookies_file_path, "wb") as cookies_file:
+                #     pickle.dump(cookies, cookies_file)
             except Exception as e:
                 # Raise an exception in case of a login error
-                raise Exception("Login error: \n", e)
+                raise Exception("Login error:", e)
 
     def parse_by_keyword(self, key, mode='top'):
         save_path = os.path.join(self.results_path, key)
@@ -141,6 +155,10 @@ class Parser(TikTok):
 
         file_path = os.path.join(save_path, f'{key}.txt')
 
+        with open(self.cookies_file_path, "rb") as cookies_file:
+            cookies = pickle.load(cookies_file)
+        for cookie in cookies:
+            self.driver.add_cookie(cookie)
         self.driver.get(self.URL)
         self.__input_keyword(key)
         sleep(60)

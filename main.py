@@ -20,7 +20,7 @@ def parsing(keywords):
 
     for key in keywords:
         parser.login()
-        # parser.parse_by_keyword(key)
+        parser.parse_by_keyword(key)
     parser.quit()
 
 

@@ -56,7 +56,7 @@ class TikTok:
         # Returning the configured Chrome driver
         return driver
 
-    def _wait_for_element_located(self, by, value, timeout=15):
+    def _wait_for_element_located(self, by, value, timeout=60):
         try:
             element = WebDriverWait(self.driver, timeout).until(
                 EC.presence_of_element_located((by, value))
@@ -65,7 +65,7 @@ class TikTok:
         except TimeoutException:
             raise NoSuchElementException(f"Element not found: {by}={value}")
 
-    def _wait_for_element_clickable(self, by, value, timeout=15):
+    def _wait_for_element_clickable(self, by, value, timeout=60):
         try:
             element = WebDriverWait(self.driver, timeout).until(
                 EC.element_to_be_clickable((by, value))
@@ -74,7 +74,7 @@ class TikTok:
         except TimeoutException:
             raise NoSuchElementException(f"Element not found: {by}={value}")
 
-    def _wait_for_element_invisible(self, by, value, timeout=15):
+    def _wait_for_element_invisible(self, by, value, timeout=60):
         try:
             WebDriverWait(self.driver, timeout).until(
                 EC.invisibility_of_element((by, value))
