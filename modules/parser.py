@@ -139,7 +139,7 @@ class Parser(TikTok):
                 # Find and click the login button
                 login_button = self.driver.find_element(By.CSS_SELECTOR, 'button[data-e2e="login-button"]')
                 login_button.click()
-                sleep(100)
+                sleep(60)
 
                 # # Get the current session cookies and save them to a file
                 # cookies = self.driver.get_cookies()

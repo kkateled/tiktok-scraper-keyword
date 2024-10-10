@@ -11,11 +11,15 @@ class Downloader(TikTok):
 
     def __init__(self, key, proxy=None, headless=False):
         super().__init__(proxy, headless)
-        self.video_save_path = os.path.join(self.results_path, key)
-        self.links_file_path = os.path.join(self.video_save_path, f'{key}.txt')
+        self.main_folder = os.path.join(self.results_path, key)
+        self.links_file_path = os.path.join(self.main_folder, f'{key}.txt')
 
         # ensure that the folders exist
-        os.makedirs(self.video_save_path, exist_ok=True)
+        os.makedirs(self.main_folder, exist_ok=True)
+
+        # make the additional folders
+        self.video_save_path = os.path.join(self.main_folder, f'{key}_videos')
+        os.makedirs(self.video_save_path)
 
     def read_links_file(self):
         # handling the scenario where the file is not found

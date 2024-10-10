@@ -1,5 +1,7 @@
 import json
 import os
+import shutil
+from datetime import date
 
 os.environ["DBUS_SESSION_BUS_ADDRESS"] = "/dev/null"
 
@@ -36,15 +38,26 @@ def downloading(keywords):
             downloader.download(link)
 
 
+def delete(keywords):
+    """
+    Delete folder with videos. Save links.txt.
+    """
+    for key in keywords:
+        mydir = os.path.join("/Users/kate/PycharmProjects/tiktokdownloader/results", key, f'{key}_videos')
+        shutil.rmtree(mydir)
+
+
 if __name__ == "__main__":
     keys = [
-        'coldest',
+        date.today().strftime("%d.%m.%Y"),
     ]
 
-    choice = input("Enter '1' to run the parser, '2' to run the downloader: ")
+    choice = input("Enter '1' to run the parser, '2' to run the downloader, '3' to run the cleaning: ")
     if choice == '1':
         parsing(keys)
     elif choice == '2':
         downloading(keys)
+    elif choice == '3':
+        delete(keys)
     else:
         print("Invalid choice. Please enter '1' or '2'")
