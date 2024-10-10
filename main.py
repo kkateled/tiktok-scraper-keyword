@@ -1,7 +1,6 @@
 import json
 import os
 import shutil
-from datetime import date
 
 os.environ["DBUS_SESSION_BUS_ADDRESS"] = "/dev/null"
 
@@ -15,7 +14,17 @@ tt_password = config["tt_password"]
 proxy = ''
 
 
-def parsing(keywords):
+def parsing():
+    from modules.parser import Parser
+
+    parser = Parser(tt_email, tt_password, proxy=None, headless=False)
+
+    parser.login()
+    parser.parse()
+    parser.quit()
+
+
+def parsing_keys(keywords):
     from modules.parser import Parser
 
     parser = Parser(tt_email, tt_password, proxy=None, headless=False)
@@ -49,15 +58,23 @@ def delete(keywords):
 
 if __name__ == "__main__":
     keys = [
-        date.today().strftime("%d.%m.%Y"),
+
     ]
 
     choice = input("Enter '1' to run the parser, '2' to run the downloader, '3' to run the cleaning: ")
     if choice == '1':
-        parsing(keys)
+        mode = input("Enter '1' to run the parser without keywords, '2' with ones: ")
+        if mode == '1':
+            parsing()
+        elif mode == '2':
+            parsing_keys(keys)
+        else:
+            print("Invalid choice. Please enter '1' or '2'")
     elif choice == '2':
-        downloading(keys)
+        name_direct = input("Enter name of folder: ")
+        downloading(name_direct)
     elif choice == '3':
-        delete(keys)
+        name_direct = input("Enter name of folder: ")
+        delete(name_direct)
     else:
-        print("Invalid choice. Please enter '1' or '2'")
+        print("Invalid choice. Please enter '1', '2' or '3'")
