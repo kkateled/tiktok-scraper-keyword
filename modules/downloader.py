@@ -19,7 +19,7 @@ class Downloader(TikTok):
 
         # make the additional folders
         self.video_save_path = os.path.join(self.main_folder, f'{key}_videos')
-        os.makedirs(self.video_save_path)
+        os.makedirs(self.video_save_path, exist_ok=True)
 
     def read_links_file(self):
         # handling the scenario where the file is not found

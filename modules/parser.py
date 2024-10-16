@@ -6,7 +6,7 @@ from selenium.webdriver.common.by import By
 from selenium.webdriver.common.action_chains import ActionChains
 from selenium_stealth import stealth
 from modules.base import TikTok
-from datetime import datetime
+import pyperclip
 
 
 class Parser(TikTok):
@@ -39,11 +39,6 @@ class Parser(TikTok):
         # Press the Enter key
         search_input.send_keys(Keys.ENTER)
 
-    def __switch_to_video_tab(self):
-        # Find and click the video tab
-        video_tab = self.driver.find_element(By.ID, 'tabs-0-tab-search_video')
-        video_tab.click()
-
     def __parsing_processing(self, selector, timeout=5):
         # Waiting until the first element becomes clickable
         self._wait_for_element_clickable(By.XPATH, selector, 120)
@@ -63,10 +58,8 @@ class Parser(TikTok):
             current_video_count = len(video_links)
             print('Found videos: ', len(video_links))
 
-            # Break the loop if the count remains the same (no new videos loaded)
-            if current_video_count == prev_video_count:
-                break
-            elif len(video_links) == 100:
+            # Break the loop if the count > 100
+            if len(video_links) > 150:
                 break
 
             # On each iteration, we update the value of 'prev_video_count'
@@ -76,6 +69,49 @@ class Parser(TikTok):
         # Extract video URLs from links
         video_urls = [link.get_attribute('href') for link in video_links]
         print(f'Total links: {len(video_urls)}\n')
+
+        return video_urls
+
+    def __parsing_recommendation(self, timeout=5):
+        video_urls = []
+
+        # Find and click the button "for you"
+        button = self._wait_for_element_clickable(By.XPATH, ".//*[@data-e2e='nav-foryou']")
+        button.click()
+        sleep(30)
+
+        # to create chains of actions
+        achains = ActionChains(self.driver)
+
+        # to create a page scroll using ARROW_DOWN
+        body = self.driver.find_element(By.TAG_NAME, 'body')
+
+        # Infinite scroll loop
+        while True:
+            try:
+                # Waiting until the video becomes clickable
+                self._wait_for_element_clickable(By.XPATH, "//video[@playsinline='true']", 60)
+
+                # find video, right click and copy link
+                right_click = self.driver.find_element(By.XPATH, "//video[@playsinline='true']")
+                achains.context_click(right_click).perform()
+                sleep(timeout)
+                self.driver.find_element(By.XPATH, "//span[contains(text(), 'Copy link')]").click()
+                sleep(timeout)
+
+                # save link
+                copied_link = pyperclip.paste()
+                video_urls.append(copied_link)
+            except Exception as e:
+                print(e)
+
+            # Break the loop
+            if len(video_urls) > 150:
+                break
+
+            # scroll loop
+            body.send_keys(Keys.ARROW_DOWN)
+            sleep(timeout)
 
         return video_urls
 
@@ -126,6 +162,7 @@ class Parser(TikTok):
             # Find and click the login button
             login_button = self.driver.find_element(By.CSS_SELECTOR, 'button[data-e2e="login-button"]')
             login_button.click()
+
             sleep(60)
 
             # Get the current session cookies and save them to a file
@@ -137,74 +174,21 @@ class Parser(TikTok):
             # Raise an exception in case of a login error
             raise Exception("Login error:", e)
 
-    def parse_by_keyword(self, key, mode='top'):
+    def parse_by_keyword(self, key, mode):
+        if mode == 'keywords':
+            selector = '//div[@data-e2e="search_top-item"]//a[@tabindex="-1"]'  # top_tab_xpath
+            self.__input_keyword(key)
+            video_links = self.__parsing_processing(selector, 15)
+        elif mode == 'explore':
+            selector = '//div[@data-e2e="explore-item"]//a[@tabindex="-1"]'
+            video_links = self.__parsing_processing(selector, 15)
+        else:
+            video_links = self.__parsing_recommendation()
+
         save_path = os.path.join(self.results_path, key)
         os.makedirs(save_path, exist_ok=True)
-
         file_path = os.path.join(save_path, f'{key}.txt')
 
-        with open(self.cookies_file_path, "rb") as cookies_file:
-            cookies = pickle.load(cookies_file)
-        for cookie in cookies:
-            self.driver.add_cookie(cookie)
-        self.driver.get(self.URL)
-        self.__input_keyword(key)
-        sleep(60)
-
-        # XPath expressions for finding links on the Top and Videos tabs
-        top_tab_xpath = '//div[@data-e2e="search_top-item"]//a[@tabindex="-1"]'
-        video_tab_xpath = '//div[@data-e2e="search_video-item"]//a[@tabindex="-1"]'
-
-        if mode == 'top':
-            video_links = self.__parsing_processing(top_tab_xpath, 15)
-        else:
-            video_links = self.__parsing_processing(video_tab_xpath, 15)
+        sleep(30)
 
         self.__save_links_to_file(video_links, file_path)
-
-    def parse(self):
-        name_path = datetime.now().strftime('%Y.%m.%d')
-        save_path = os.path.join(self.results_path, name_path)
-        os.makedirs(save_path, exist_ok=True)
-        file_path = os.path.join(save_path, f'{name_path}.txt')
-
-        sleep(60)
-
-        video_links = self.__parsing_processing_without_keywords(15)
-        self.__save_links_to_file(video_links, file_path)
-
-    def __parsing_processing_without_keywords(self, timeout=5):
-        selector = '//div[@data-e2e="explore-item"]//a[@tabindex="-1"]'
-        # Waiting until the first element becomes clickable
-        self._wait_for_element_clickable(By.XPATH, selector, 120)
-
-        # Find initial set of video links
-        video_links = self.driver.find_elements(By.XPATH, selector)
-        prev_video_count = len(video_links)
-
-        # Infinite scroll loop
-        while True:
-            # Scroll to the end of the page
-            self.driver.find_element(By.TAG_NAME, 'body').send_keys(Keys.END)
-            sleep(timeout)
-
-            # Retrieve current set of video links
-            video_links = self.driver.find_elements(By.XPATH, selector)
-            current_video_count = len(video_links)
-            print('Found videos: ', len(video_links))
-
-            # Break the loop if the count remains the same (no new videos loaded)
-            if current_video_count == prev_video_count:
-                break
-            elif len(video_links) == 100:
-                break
-
-            # On each iteration, we update the value of 'prev_video_count'
-            # by assigning it the value of 'current_video_count'
-            prev_video_count = current_video_count
-
-        # Extract video URLs from links
-        video_urls = [link.get_attribute('href') for link in video_links]
-        print(f'Total links: {len(video_urls)}\n')
-
-        return video_urls

@@ -2,7 +2,7 @@ import os
 import undetected_chromedriver as uc
 from selenium.common import TimeoutException, NoSuchElementException
 from selenium.webdriver.support.wait import WebDriverWait
-from selenium.webdriver.support import expected_conditions as EC
+from selenium.webdriver.support import expected_conditions as ec
 
 
 class TikTok:
@@ -59,7 +59,7 @@ class TikTok:
     def _wait_for_element_located(self, by, value, timeout=60):
         try:
             element = WebDriverWait(self.driver, timeout).until(
-                EC.presence_of_element_located((by, value))
+                ec.presence_of_element_located((by, value))
             )
             return element
         except TimeoutException:
@@ -68,7 +68,7 @@ class TikTok:
     def _wait_for_element_clickable(self, by, value, timeout=60):
         try:
             element = WebDriverWait(self.driver, timeout).until(
-                EC.element_to_be_clickable((by, value))
+                ec.element_to_be_clickable((by, value))
             )
             return element
         except TimeoutException:
@@ -77,7 +77,7 @@ class TikTok:
     def _wait_for_element_invisible(self, by, value, timeout=60):
         try:
             WebDriverWait(self.driver, timeout).until(
-                EC.invisibility_of_element((by, value))
+                ec.invisibility_of_element((by, value))
             )
         except TimeoutException:
             print("Element did not disappear within the specified timeout")
