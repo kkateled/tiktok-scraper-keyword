@@ -5,7 +5,7 @@ from selenium.webdriver.support.wait import WebDriverWait
 from selenium.webdriver.support import expected_conditions as ec
 
 
-class TikTok:
+class Base:
     def __init__(self, proxy=None, headless=False):
         self.results_path = os.path.abspath('results')
         self.driver = self._set_driver(proxy, headless)
@@ -81,3 +81,4 @@ class TikTok:
             )
         except TimeoutException:
             print("Element did not disappear within the specified timeout")
+

@@ -5,12 +5,13 @@ from selenium.webdriver import Keys
 from selenium.webdriver.common.by import By
 from selenium.webdriver.common.action_chains import ActionChains
 from selenium_stealth import stealth
-from modules.base import TikTok
+from modules.base import Base
 import pyperclip
 
 
-class Parser(TikTok):
+class Parser(Base):
     URL = 'https://www.tiktok.com/'
+    black_list = ['videootainment', ]
 
     def __init__(self, email, password, proxy=None, headless=False):
         super().__init__(proxy, headless)
@@ -72,11 +73,11 @@ class Parser(TikTok):
 
         return video_urls
 
-    def __parsing_recommendation(self, timeout=5):
+    def __parsing_scrolling(self, selector, timeout=5):
         video_urls = []
 
         # Find and click the button "for you"
-        button = self._wait_for_element_clickable(By.XPATH, ".//*[@data-e2e='nav-foryou']")
+        button = self._wait_for_element_clickable(By.XPATH, selector)
         button.click()
         sleep(30)
 
@@ -175,6 +176,7 @@ class Parser(TikTok):
             raise Exception("Login error:", e)
 
     def parse_by_keyword(self, key, mode):
+        """Mode: the recommendation, the following, the explore, find with keywords"""
         if mode == 'keywords':
             selector = '//div[@data-e2e="search_top-item"]//a[@tabindex="-1"]'  # top_tab_xpath
             self.__input_keyword(key)
@@ -182,8 +184,12 @@ class Parser(TikTok):
         elif mode == 'explore':
             selector = '//div[@data-e2e="explore-item"]//a[@tabindex="-1"]'
             video_links = self.__parsing_processing(selector, 15)
+        elif mode == 'following':
+            button = ".//*[@data-e2e='nav-following']"
+            video_links = self.__parsing_scrolling(button)
         else:
-            video_links = self.__parsing_recommendation()
+            button = ".//*[@data-e2e='nav-foryou']"
+            video_links = self.__parsing_scrolling(button)
 
         save_path = os.path.join(self.results_path, key)
         os.makedirs(save_path, exist_ok=True)

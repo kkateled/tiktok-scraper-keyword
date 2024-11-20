@@ -1,77 +1,69 @@
 import json
 import os
-import shutil
 from datetime import datetime
+import sys
 
-
-os.environ["DBUS_SESSION_BUS_ADDRESS"] = "/dev/null"
 
 with open("config.json") as config_file:
     config = json.load(config_file)
-
 tt_email = config["tt_email"]
 tt_password = config["tt_password"]
 
 
-proxy = ''
-
-
-def parsing(keywords, mode):
+def parsing(tag_path, mode):
     from modules.parser import Parser
 
     parser = Parser(tt_email, tt_password, proxy=None, headless=False)
-
-    for key in keywords:
-        parser.login()
-        parser.parse_by_keyword(key, mode)
+    parser.login()
+    parser.parse_by_keyword(tag_path, mode)
     parser.quit()
 
 
-def downloading(keywords):
+def downloading(file_tag):
     from modules.downloader import Downloader
 
-    for key in keywords:
-        downloader = Downloader(key, headless=True)
-        links = downloader.read_links_file()
+    downloader = Downloader(file_tag, headless=True)
+    links = downloader.read_links_file()
 
-        for index, link in enumerate(links, 1):
-            print(f"Processing link {index}/{len(links)}")
-            try:
-                downloader.download(link)
-            except Exception as e:
-                print(e)
+    for index, link in enumerate(links, 1):
+        print(f"Processing link {index}/{len(links)}")
+        try:
+            downloader.download(link)
+        except Exception as e:
+            print(e)
 
 
-def delete(keywords):
-    """
-    Delete folder with videos. Save links.txt.
-    """
-    for key in keywords:
-        del_dir = os.path.join("/Users/kate/PycharmProjects/tiktokdownloader/results", key, f'{key}_videos')
-        shutil.rmtree(del_dir)
+def create_project(file_tag):
+    from modules.davinci_services import Davinci
+
+    davinci = Davinci(file_tag)
+    try:
+        project = davinci.create_new_project()
+        imported_clips = davinci.import_videos(project)
+        davinci.create_timeline(project, imported_clips)
+    except Exception as e:
+        print(f"Error: {str(e)}")
+        sys.exit(1)
+
+
+def youtube(media_file, client_secret):
+    from modules.youtube_services import YouTube
+    session = YouTube()
+    youtube_id = session.authenticate(client_secret)
+    session.upload_video(youtube_id, media_file)
 
 
 if __name__ == "__main__":
-    keys = [
-        datetime.now().strftime('%m.%d'),
-    ]
-
-    choice = input("Enter '1' to run the parser, '2' to run the downloader, '3' to run the cleaning: ")
+    choice = input("Enter '1' for Monster, '2' for Frostbite: ")
     if choice == '1':
-        mode = input("Enter '1' the recommendation, '2' the all explore, '3' find with keywords: ")
-        if mode == '1':
-            parsing(keys, mode='recommendation')
-        elif mode == '2':
-            parsing(keys, mode='explore')
-        elif mode == '3':
-            parsing(keys, mode='keywords')
-        else:
-            print("Invalid choice. Please enter '1' or '2'")
+        tag = f"monster_{datetime.now().strftime('%m.%d')}"
+        parsing(tag, mode='recommendation')
+        downloading(tag)
+        create_project(tag)
     elif choice == '2':
-        name_direct = input("Enter name of folders: ")
-        downloading(list(name_direct.split(',')))
-    elif choice == '3':
-        name_direct = input("Enter name of folders: ")
-        delete(list(name_direct.split(',')))
+        tag = f"frostbite_{datetime.now().strftime('%m.%d')}"
+        parsing(tag, mode='following')
+        downloading(tag)
+        create_project(tag)
     else:
-        print("Invalid choice. Please enter '1', '2' or '3'")
+        print("Invalid choice. Please enter '1', '2'")

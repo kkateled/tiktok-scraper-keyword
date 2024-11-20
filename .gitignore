@@ -1,5 +1,8 @@
 .idea
 venv
 config.json
+client_monster.json
+client_frostbite.json
 data
 notes_xpath.md
+.env

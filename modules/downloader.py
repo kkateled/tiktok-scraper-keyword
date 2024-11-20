@@ -3,10 +3,10 @@ import os.path
 import requests
 from selenium.webdriver.common.by import By
 
-from modules.base import TikTok
+from modules.base import Base
 
 
-class Downloader(TikTok):
+class Downloader(Base):
     URL = 'https://snaptik.app/'
 
     def __init__(self, key, proxy=None, headless=False):
