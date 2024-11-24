@@ -91,7 +91,7 @@ class Parser(Base):
         while True:
             try:
                 # Waiting until the video becomes clickable
-                self._wait_for_element_clickable(By.XPATH, "//video[@playsinline='true']", 60)
+                self._wait_for_element_located(By.XPATH, "//video[@playsinline='true']", 20)
 
                 # find video, right click and copy link
                 right_click = self.driver.find_element(By.XPATH, "//video[@playsinline='true']")

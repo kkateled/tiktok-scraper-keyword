@@ -33,7 +33,7 @@ def downloading(file_tag):
             print(e)
 
 
-def create_project(file_tag):
+def create_project(file_tag, save_path):
     from modules.davinci_services import Davinci
 
     davinci = Davinci(file_tag)
@@ -41,6 +41,8 @@ def create_project(file_tag):
         project = davinci.create_new_project()
         imported_clips = davinci.import_videos(project)
         davinci.create_timeline(project, imported_clips)
+        # video_path = davinci.render(project, save_path)
+        # return video_path
     except Exception as e:
         print(f"Error: {str(e)}")
         sys.exit(1)
@@ -54,16 +56,18 @@ def youtube(media_file, client_secret):
 
 
 if __name__ == "__main__":
-    choice = input("Enter '1' for Monster, '2' for Frostbite: ")
+    choice = input("Open DaVinci. Enter '1' for Monster, '2' for Frostbite: ")
     if choice == '1':
         tag = f"monster_{datetime.now().strftime('%m.%d')}"
         parsing(tag, mode='recommendation')
         downloading(tag)
-        create_project(tag)
+        create_project(tag, os.getenv('SAVE_PATH_MONSTER'))
+        # youtube(video, os.getenv('CLIENT_MONSTER'))
     elif choice == '2':
         tag = f"frostbite_{datetime.now().strftime('%m.%d')}"
         parsing(tag, mode='following')
         downloading(tag)
-        create_project(tag)
+        create_project(tag, os.getenv('SAVE_PATH_FROSTBITE'))
+        # youtube(video, os.getenv('CLIENT_FROSTBITE'))
     else:
         print("Invalid choice. Please enter '1', '2'")

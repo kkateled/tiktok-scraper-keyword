@@ -50,5 +50,6 @@ class Davinci:
         project.SetRenderSettings(render_settings)
         project.AddRenderJob()
         project.StartRendering()
-        print("rendering finish")
+        if project.IsRenderingInProgress() == "False":
+            print("rendering finish")
         return f"{save_path}/{self.name_project}"

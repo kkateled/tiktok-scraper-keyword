@@ -10,6 +10,7 @@ class YouTube:
         self.scopes = ["https://www.googleapis.com/auth/youtube.upload"]
 
     def authenticate(self, client_secret):
+        """returns ID youtube chanel"""
         try:
             flow = google_auth_oauthlib.flow.InstalledAppFlow.from_client_secrets_file(client_secret, self.scopes)
             credentials = flow.run_local_server(port=8080)
@@ -20,6 +21,7 @@ class YouTube:
             return None
 
     def upload_video(self, youtube_id, media_file):
+        """return ID uploaded video"""
         if youtube_id is None:
             print("Error: YouTube client is not authorized")
             return
@@ -52,6 +54,7 @@ class YouTube:
 
             if response is not None and 'id' in response:
                 print(f"Video uploaded with ID: {response['id']}")
+                return response['id']
             else:
                 print("Error: No response or video ID returned")
 
@@ -60,3 +63,5 @@ class YouTube:
             return
         except Exception as error:
             print(f"An unexpected error occurred: {error}")
+
+
