@@ -20,6 +20,7 @@ class Parser(Base):
         self.cookies_path = os.path.join(os.path.abspath('data'), 'cookies')
         self.cookies_file_path = os.path.join(self.cookies_path, f'{self.email}.pkl')
         self.actions = ActionChains(self.driver, duration=550)
+        self.legacy_login = False
 
         os.makedirs(self.cookies_path, exist_ok=True)
 
@@ -44,10 +45,6 @@ class Parser(Base):
         # Waiting until the first element becomes clickable
         self._wait_for_element_clickable(By.XPATH, selector, 120)
 
-        # Find initial set of video links
-        video_links = self.driver.find_elements(By.XPATH, selector)
-        prev_video_count = len(video_links)
-
         # Infinite scroll loop
         while True:
             # Scroll to the end of the page
@@ -56,16 +53,12 @@ class Parser(Base):
 
             # Retrieve current set of video links
             video_links = self.driver.find_elements(By.XPATH, selector)
-            current_video_count = len(video_links)
             print('Found videos: ', len(video_links))
 
-            # Break the loop if the count > 100
+            # Break the loop if the count > 150
             if len(video_links) > 150:
                 break
 
-            # On each iteration, we update the value of 'prev_video_count'
-            # by assigning it the value of 'current_video_count'
-            prev_video_count = current_video_count
 
         # Extract video URLs from links
         video_urls = [link.get_attribute('href') for link in video_links]
@@ -87,15 +80,25 @@ class Parser(Base):
         # to create a page scroll using ARROW_DOWN
         body = self.driver.find_element(By.TAG_NAME, 'body')
 
+        # create counter
+        counter_page = 0
+
         # Infinite scroll loop
         while True:
             try:
+                html_code = f'//article[@data-scroll-index="{counter_page}"]'
                 # Waiting until the video becomes clickable
-                self._wait_for_element_located(By.XPATH, "//video[@playsinline='true']", 20)
+                element = self._wait_for_element_located(By.XPATH, html_code, 60)
+                print(element)
+                if self.legacy_login == True:
+                    el = self._wait_for_element_located(By.TAG_NAME, "video", 20)
 
-                # find video, right click and copy link
-                right_click = self.driver.find_element(By.XPATH, "//video[@playsinline='true']")
-                achains.context_click(right_click).perform()
+                    # find video, right click and copy link
+                    element = self.driver.find_element(By.XPATH, "//video[@playsinline='true']")
+                    # element = self.driver.find_element(By.TAG_NAME, "video")
+                    # achains.context_click(right_click).perform()
+                    achains.move_by_offset(100, 200).context_click().perform()
+                achains.context_click(element).perform()
                 sleep(timeout)
                 self.driver.find_element(By.XPATH, "//span[contains(text(), 'Copy link')]").click()
                 sleep(timeout)
@@ -113,6 +116,7 @@ class Parser(Base):
             # scroll loop
             body.send_keys(Keys.ARROW_DOWN)
             sleep(timeout)
+            counter_page += 1  # update counter
 
         return video_urls
 
@@ -143,34 +147,41 @@ class Parser(Base):
             # Navigate to the login URL
             self.driver.get(self.URL)
 
-            # Find and click the login proposal
-            step1 = self._wait_for_element_located(By.XPATH, ".//*[@data-e2e='top-login-button']")
-            step1.click()
+            # # # Find and click the login proposal
+            # if self._wait_for_element_located(By.XPATH, "//button[.//div[text()='Log in']]"):
+            #     self._wait_for_element_located(By.XPATH, "//button[.//div[text()='Log in']]").click()
+
             # Find and click the login proposal with phone/email/user_name
-            step2 = self._wait_for_element_located(By.XPATH,
-                                                   "//*[contains(text(), 'Use phone / email / username')]")
+            step2 = self._wait_for_element_located(By.XPATH, "//*[contains(text(), 'Use phone / email / username')]")
             step2.click()
+            sleep(5)
+
             # Find and click the login proposal with email
             step3 = self._wait_for_element_located(By.XPATH,
                                                    "//*[contains(text(), 'Log in with email or username')]")
             step3.click()
+            sleep(5)
+
             # Find and fill in the email input field
             input_email = self._wait_for_element_located(By.XPATH, "//input[@placeholder='Email or username']")
             input_email.send_keys(self.email)
+            sleep(5)
+
             # Find and fill in the password input field
             input_password = self._wait_for_element_located(By.XPATH, "//input[@placeholder='Password']")
             input_password.send_keys(self.password)
+            sleep(5)
+
             # Find and click the login button
             login_button = self.driver.find_element(By.CSS_SELECTOR, 'button[data-e2e="login-button"]')
             login_button.click()
 
-            sleep(60)
+            sleep(90)
 
             # Get the current session cookies and save them to a file
             cookies = self.driver.get_cookies()
             with open(self.cookies_file_path, "wb") as cookies_file:
                 pickle.dump(cookies, cookies_file)
-
         except Exception as e:
             # Raise an exception in case of a login error
             raise Exception("Login error:", e)
