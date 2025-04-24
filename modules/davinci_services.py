@@ -12,7 +12,7 @@ class Davinci:
 
     def create_new_project(self):
         project = self.project_manager.CreateProject(self.name_project)
-        if not project:
+        if project is None:
             raise Exception("Failed to create project!")
         return project
 
